@@ -1,5 +1,8 @@
 
 * Overview
+  This repository contains code for the analysis of the GL$\sigma$
+  model, a very simple statistical model of transcription factor
+  binding activity.
 
 * Installation
 

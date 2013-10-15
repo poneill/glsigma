@@ -1,0 +1,194 @@
+\documentclass{article}
+\usepackage{amsmath}
+\newcommand{\ep}{\epsilon}
+\newcommand{\Var}{\mathrm{Var}}
+\title{$GL\sigma$-Models}
+\author{Patrick O'Neill}
+\begin{document}
+\maketitle{}
+
+\section{Introduction}
+Elucidating the general principles by which transcriptional factors
+(TFs) operate on short timescales, and evolve on long ones, is a
+central task in computational biology.  One early effort towards this
+goal was made by Schneider \textit{et al.}, who proposed that the
+information content of a transcription factor binding motif ($R_{seq})
+$ should equal the information content of the binding process itself,
+measured as the difference between the entropies of the prior and
+posterior distributions of the TF over the chromosome, given a binding
+event ($R_{freq}$)\cite{schneider86}.  This claim was later taken up
+again by Kim, Martinetz and Polani who argued for the approximate
+equality of $R_{seq}$ and $R_{freq}$ with numerical evidence from an
+essentially combinatorial model \cite{kim00}.
+
+Empirically, however, the equality of $R_{seq}$ and $R_{freq}$ is far
+from incontrovertible.  In fact, there is much stronger support for
+the inequality $R_{seq} \leq R_{freq}$, with differences of as much as
+10 bits observed in \textit{Escherichia coli}.  Why do such
+discrepancies obtain?  The conceptual model provided in
+\cite{schneider86} assumes a single copy of a TF which binds with
+equal probability to one of $\gamma$ sites.  It is known, however,
+that TFs bind with varying affinities to different sites, and that
+these differences are even exploited by evolution to construct complex
+genetic circuits, \textit{e.g.} regulons whose gene expression is
+ordered temporally by binding site strength [XXX cite].  If sites are
+bound differentially, though, the assumptions of the model in
+\cite{schneider86} do not hold.
+
+The aim of the present paper is to explore the effects of differential
+regulation on relationship of $R_{seq}$ and $R_{freq}$.  To do so, we
+present a simple probabilistic model of the behavior of a TF on a
+chromosome which depends only on three parameters.  We offer this
+generative model as a relatively tractable null hypothesis against
+which one may test various claims about the kinetics and evolution of
+TFs.
+
+\section{Model Overview}
+
+For simplicity, we assume that a TF binds to a site $s = s_1s_2\ldots
+s_L$ of length $L$ with a free energy of binding $\epsilon(s) $ which
+is linear and additive in each base, \textit{i.e.} 
+
+\begin{equation}
+  \label{eq:energy_scoring}
+\epsilon(s) =
+\sum_{i=1}^L\epsilon_i(s_i) =
+\sum_{i=1}^L\sum_{b\in\{A,C,G,T\}}\epsilon_{ib}[s_i=b].
+\end{equation}
+We then consider the case of a single copy of the TF which binds to a
+genome $g = g_1g_2\ldots g_G$of length $G$.  We define a
+\textit{configuration} to be a pair $(\epsilon,g)$, \textit{i.e.} a
+specific energy matrix and a specific genome.
+
+We then define the ($G,L,\sigma$) distribution over all configurations
+with genomes of length $G$ and energy matrices of length $L$ as the
+distribution such that $\epsilon_{ib}\overset{i.i.d.}{\sim}
+\mathcal{N}(0,\sigma)$ and $g_j\overset{i.i.d.}{\sim}
+\mathcal{U}(\{A,C,G,T\})$, the discrete uniform distribution over the
+set of nucleotides.  From this definition it follows trivially that
+the probability of configuration $(\epsilon,G)$ under $(G,L,\sigma)$ is:
+
+  \begin{equation}
+    \label{eq:config_prob}
+      P(\epsilon,G) = \frac{1}{4^G}\prod_{i=1}^L\prod_{b\in\{A,C,G,T\}}\phi(\epsilon_{ib};0,\sigma^2),
+  \end{equation}
+  where $phi(x;\mu,\sigma^2)$ is the normal p.d.f.  Note that the
+  support of each $(G,L,\sigma)$ distribution is the set of all
+  configurations of appropriate dimensions $G$ and $L$.
+
+\subsection{Configuration statistics}
+In this section we define several functions of a configuration which
+will be of interest to us.  
+
+First let us define the posterior entropy of a configuration.
+Supposing that the off-rate is negligible, the stationary occupancy
+probability for the $i$th site is given by a Boltzmann distribution:
+
+\begin{equation}
+  \label{eq:boltzmann}
+  P(s_i\ \mathrm{is\ bound}) = \frac{e^{-\beta\epsilon(s_i)}}{Z}.
+\end{equation}
+
+The posterior Shannon entropy of the configuration is then:
+
+\begin{equation}
+\label{eq:post_ent}
+H(\epsilon,G) = -\sum_jp_j\log_2p_j
+\end{equation}
+
+and the information content $R_{freq}$ of the binding event is given by:
+
+\begin{equation}
+  \label{eq:rfreq}
+  R_{freq} = H_{prior} - H_{posterior} = \log_2(G) + \sum_jp_j\log_2p_j.
+\end{equation}
+
+\section{Model Analysis}
+In this section we derive approximations for the posterior entropy of
+a typical configuration in a $(G,L,\sigma)$ distribution.
+
+\subsection{Site energy statistics}
+\subsubsection{Mean site energy}
+First, let us compute the expected energy of free binding for a given
+energy matrix $\epsilon$.  If $\epsilon$ is fixed, then by taking the
+expectation over sites, we have:
+\begin{align*}
+  <\epsilon(s)>_s =& \sum_{i=1}^L<\epsilon_i(s_i)>_{s_i}\\
+  =& \frac{1}{4}\sum_{i=1}^L\epsilon_i\\.
+\end{align*}
+
+Then taking expectations over energy matrices, we obtain:
+\begin{align*}
+  <<\epsilon(s)>_s>_\epsilon =& <\frac{1}{4}\sum_{i=1}^L\epsilon_i>_\epsilon\\
+  =& 0.
+\end{align*}
+
+\subsubsection{Variance of site energy}
+The variance in the energy score of a given matrix with respect to
+site is given by:
+\begin{align*}
+  \Var(\ep(s))_s =& <\ep(s)^2>_s - <\ep(s)>_s^2\\
+  =& \sum_{i=1}^L(\frac{1}{4}\sum_{b\in\{A,C,G,T\}}\ep_{ib}^2 - \frac{1}{16}(\sum_{b\in\{A,C,G,T\}}\ep_{ib})^2)\\
+  =& \sum_{i=1}^L(\frac{3}{16}\sum_{b\in\{A,C,G,T\}}\ep_{ib}^2 - \frac{1}{16}\sum_{b\neq b'}\ep_{ib}\ep_{ib'})\\
+\end{align*}
+from which it follows that:
+\begin{align*}
+  \Var(\ep(s))_{s,\ep} = L(\frac{3}{16}(4\sigma^2) - 0) = \frac{3}{4}L\sigma^2.
+\end{align*}
+We note that this expression is the expected variance in scores for a
+large collection of random sites evaluated with an arbitrary
+\textit{fixed} energy matrix, not a collection evaluated with a matrix
+that randomly varies with the sites.  In the latter case, the variance
+would be $L\sigma^2$: fixing the matrix with respect to the collection
+reduces the variance by a factor of $\frac{1}{4}$.
+
+\subsection{Posterior Entropy}
+To estimate the posterior entropy of a `typical' configuration from the $(G,L,\sigma)$, we begin with the following identity from statistical mechanics:
+
+\begin{align*}
+  H =& -\sum_j p_j\log p_j\\
+  =& -\sum_j \frac{e^{-\beta\ep_j}}{Z}\log \frac{e^{-\beta\ep_j}}{Z}\\
+  =& \sum_j \frac{e^{-\beta\ep_j}}{Z}(\beta\ep_j + \log Z)\\
+  =& \beta<\ep> + \log Z,\\
+\end{align*}
+where we take care to distinguish that the term $<\epsilon>$ is the
+mean energy of the system, and not the expected score of the matrix.
+If we can estimate these two terms, then clearly we will have an
+estimate of the posterior entropy itself.
+
+\subsubsection{Estimating the partition function}
+In order to obtain those quantities, we must first estimate the
+partition function $Z = \sum_je^{-\beta\ep_j}$.  Let us define
+$X\sim-\beta\ep$, so that $<X>=0$ and
+$\Var(X)=\frac{3}{4}\beta^2\sigma^2L$.  
+
+Energies are normal: We give three arguments that
+$X$ can be considered normally distributed, or more properly that our
+uncertainty about $X$ is well-captured by a normal distribution.
+Firstly, \textit{a priori} we know that $X$ is distributed as a sum of
+$L$ independent random variables.  If $L$ is large enough, then $X$
+will be approximately normally distributed.  Secondly, the mean and
+variance of $X$ are the only known constraints on its distribution.
+The principle of maximum entropy urges us to assume the distribution
+which maximizes entropy subject to known constraints, which in the
+case of known mean and variance is the normal distribution.  Thirdly,
+computational studies suggest that the normal distribution is a
+tolerable characterization of $X$ when $\mathcal{O}(L) = 10$.
+
+If $X$ is normal, then $e^X$ is lognormal.  Hence, 
+\begin{align*}
+  <Z> =& G<\mathcal{LN}(0,\frac{3}{4}\beta^2\sigma^2L)>\\
+  =&Ge^{\frac{3}{8}\beta^2\sigma^2L}
+\end{align*}
+
+
+\subsubsection{Mean energy ($<\ep>$)}
+
+
+%  Assuming that
+% $\epsilon_{ib}\overset{i.i.d.}{\sim} \mathcal{N}(0,\sigma)$,
+% $g_j\overset{i.i.d.}{\sim} \mathcal{U}(\{A,C,G,T\})$ and $L$ is not
+% too small.
+
+\bibliography{refs/bibliography}{} \bibliographystyle{abbrv} \newpage
+\end{document}
