@@ -3,7 +3,7 @@ import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.pardir,"lib","utils")))
 from random import gauss
 from utils import *
-#from scipy.stats import norm
+from scipy.stats import normaltest
 
 beta = 1.61
 
@@ -56,6 +56,17 @@ def plot_rfreq_rseq_exp():
     plt.xlabel("r_freq")
     plt.ylabel("r_seq")
     plt.show()
+
+def real_genome_data_exp():
+    genome = get_ecoli_genome()
+    pssms = [PSSM(getattr(Escherichia_coli,tf)) for tf in Escherichia_coli.tfs]
+    epss = [pssm.slide_trap(genome) for pssm in verbose_gen(pssms)]
+    Zs = sum(exp(-beta*eps) for eps in epss)
+    pss = [[exp(-beta*ep)/Z for ep in eps] for Z,eps in zip(Zs,epss)]
+    r_freqs = [log2(G) - h(ps) for ps in pss]
+    r_seqs = [weighted_ic(zip(sliding_window(genome,len(pssm)),ps),len(pssm))
+              for pssm in pssms]
+    
 
 def weighted_ic(seqs_ps,L):
     freq_table = [[0]*4 for i in range(L)]
@@ -247,8 +258,54 @@ def predict_post_ent(G,L,sigma,matrix_stats=False):
     print "H:",pred_H,H
     return pred_H,H
 
-def predict_logZ(G,mu,sigma):
+def predict_logZ_naive(G,mu,sigma):
+    """Estimate <logZ> by log<Z>"""
     return log(G) + -beta*mu + (beta*sigma)**2/2.0
+
+def pred_Zn(G,mu,sigma,n):
+    return G**n*exp(-beta*n*mu + n*beta**2*sigma**2/2)
+
+def pred_Z2(G,mu,sigma,n):
+    """does this work for n=2?"""
+    return G*exp(-beta*mu+2**2*beta**2*sigma**2/2)
+
+def predict_logZ_taylor(G,mu,sigma,order=3):
+    mean_Z = pred_Zn(G,mu,sigma,1)
+    return (log(mean_Z) +
+            sum(-1**(n+1)/(mean_Z**n*fac(n)) *
+                 sum(show([choose(n,k)*(-mean_Z)**(n-k)*pred_Zn(G,mu,sigma,k)
+                     for k in range(n+1)]))
+                 for n in range(1,order+1)))
+
+def linearity_of_expectation_test(G,mu,sigma,n):
+    print "<Z>^%s" % n,pred_Zn(G,mu,sigma,1)**n,"<Z^%s>" % n,pred_Zn(G,mu,sigma,n),
+    
+def rZ(G,L,sigma):
+    matrix = [[gauss(0,sigma) for i in range(4)] for j in range(L)]
+    genome = random_site(G)
+    eps = [score(matrix,seq,ns=False) for seq in sliding_window(genome,L)]
+    Z = sum(exp(-beta*ep) for ep in eps)
+    return Z
+    
+def logZ_by_taylor_approx_test(G,mu,sigma):
+    order = 3
+    
+def moments_of_y_test():
+    """
+    Define Y = \sum_j e^{-\beta*\epsilon_j}
+    Verify the identity that <Y^n> = G^ne^{n\beta^2\sigma^2/2}
+    """
+    G = 10000
+    mu = 0
+    sigma = 1
+    n = 2
+    trials = 100
+    Ys_n = [sum(exp(-beta*x) for x in [random.gauss(mu,sigma) for _ in xrange(G)])**n
+         for trial in xrange(trials)]
+    pred_Y = G**n*exp(n*beta**2*sigma**2/2)
+    print "pred:",pred_Y,"mean_ci:",mean_ci(Ys_n)
+    
+    
     
 def lognormal_test(mu=1,sigma=2,c=1):
     trials = 10000
