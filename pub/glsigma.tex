@@ -145,12 +145,13 @@ reduces the variance by a factor of $\frac{1}{4}$.
 \subsection{Posterior Entropy}
 To estimate the posterior entropy of a `typical' configuration from the $(G,L,\sigma)$, we begin with the following identity from statistical mechanics:
 
-\begin{align*}
-  H =& -\sum_j p_j\log p_j\\
-  =& -\sum_j \frac{e^{-\beta\ep_j}}{Z}\log \frac{e^{-\beta\ep_j}}{Z}\\
-  =& \sum_j \frac{e^{-\beta\ep_j}}{Z}(\beta\ep_j + \log Z)\\
-  =& \beta<\ep> + \log Z,\\
-\end{align*}
+\begin{align}
+  H =& -\sum_j p_j\log p_j\nonumber\\
+  =& -\sum_j \frac{e^{-\beta\ep_j}}{Z}\log \frac{e^{-\beta\ep_j}}{Z}\nonumber\\
+  =& \sum_j \frac{e^{-\beta\ep_j}}{Z}(\beta\ep_j + \log Z)\nonumber\\
+  =& \beta<\ep> + \log Z.\nonumber\\
+\label{eq:post_ent}
+\end{align}
 where we take care to distinguish that the term $<\epsilon>$ is the
 mean energy of the system, and not the expected score of the matrix.
 If we can estimate these two terms, then clearly we will have an
@@ -173,15 +174,28 @@ The principle of maximum entropy urges us to assume the distribution
 which maximizes entropy subject to known constraints, which in the
 case of known mean and variance is the normal distribution.  Thirdly,
 computational studies suggest that the normal distribution is a
-tolerable characterization of $X$ when $\mathcal{O}(L) = 10$.
+tolerable characterization of $X$ when $L$ is on the order of 10.
 
 If $X$ is normal, then $e^X$ is lognormal.  Hence, 
-\begin{align*}
-  <Z> =& G<\mathcal{LN}(0,\frac{3}{4}\beta^2\sigma^2L)>\\
+\begin{align}
+  <Z> =& G<\mathcal{LN}(0,\frac{3}{4}\beta^2\sigma^2L)>\nonumber\\
   =&Ge^{\frac{3}{8}\beta^2\sigma^2L}
-\end{align*}
+  \label{eq:expected_z}
+\end{align}
 
+\subsubsection{Estimating the log partition function}
+In the last section we obtained an expression for the expectation of the partition function $<Z>$, but equation \ref{eq:post_ent} requires an estimator for the \textit{logarithm} of the partition function.  One (naive) estimator can be obtained by simply taking the logarithm of the quantity derived in equation \ref{eq:expected_z}:
 
+\begin{equation}
+  \log <Z> = \log G + \frac{3}{8}\beta^2\sigma^2L.
+  \label{eq:naive_logz}
+\end{equation}
+Due to the concavity of the log function, however, we have
+\hbox{$<\log Z>\leq \log <Z>$} by Jensen's inequality, implying that
+the estimator in equation \ref{eq:naive_logz} will tend to
+over-estimate the desired quantity.
+
+To obtain an unbiased estimator of $\log Z$, 
 \subsubsection{Mean energy ($<\ep>$)}
 
 From the identity:
