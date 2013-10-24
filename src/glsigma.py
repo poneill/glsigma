@@ -267,7 +267,8 @@ def pred_Zn(G,mu,sigma,n):
 
 def pred_Z2(G,mu,sigma,n):
     """does this work for n=2?"""
-    return G*exp(-beta*mu+2**2*beta**2*sigma**2/2)
+    return (G*exp(-beta*mu+2**2*(beta**2)*sigma**2/2) +
+            2*choose(G,2)*exp(-beta*mu+2*(beta**2)*sigma**2/2))
 
 def predict_logZ_taylor(G,mu,sigma,order=3):
     mean_Z = pred_Zn(G,mu,sigma,1)
@@ -286,7 +287,34 @@ def rZ(G,L,sigma):
     eps = [score(matrix,seq,ns=False) for seq in sliding_window(genome,L)]
     Z = sum(exp(-beta*ep) for ep in eps)
     return Z
-    
+
+def rZsimple(G,mu,sigma):
+    return sum(exp(random.gauss(mu,sigma)) for _ in xrange(G))
+
+def pred_Zsimple(G,mu,sigma):
+    return G*exp(mu+sigma**2/2.0)
+
+def pred_Zsq_simple(G,mu,sigma):
+    """Predict <Z^2>"""
+    return G*exp(2*mu+2*sigma**2) + 2*choose(G,2)*exp(2*mu+sigma**2)
+
+def pred_Zvar_simple(G,mu,sigma):
+    return pred_Zsq_simple(G,mu,sigma) - pred_Zsimple(G,mu,sigma)**2
+
+def pred_logZ_simple(G,mu,sigma):
+    Z_hat = pred_Zsimple(G,mu,sigma)
+    return log(Z_hat) - 1/(Z_hat**2) * pred_Zvar_simple(G,mu,sigma)/2.0
+
+def annealed_approximation_test():
+    """Does <log Z> ~= log <Z>?"""
+    G = 10000
+    L = 10
+    sigma = 1
+    Zs = [rZ(G,L,sigma) for i in verbose_gen(range(1000))]
+    logZs = map(log,Zs)
+    logZ_pred = predict_logZ_naive(G,0,sqrt(1.0*sigma))
+    print mean_ci(logZs),logZ_pred
+
 def logZ_by_taylor_approx_test(G,mu,sigma):
     order = 3
     
