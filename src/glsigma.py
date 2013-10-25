@@ -296,7 +296,11 @@ def pred_Zsimple(G,mu,sigma):
 
 def pred_Zsq_simple(G,mu,sigma):
     """Predict <Z^2>"""
-    return G*exp(2*mu+2*sigma**2) + 2*choose(G,2)*exp(2*mu+sigma**2)
+    return G*exp(2*mu+2*sigma**2) + (G*(G-1))*exp(2*mu+sigma**2)
+
+def pred_Zsq_simplified(G,mu,sigma):
+    """Predict <Z^2>"""
+    return (G**2)*exp(2*mu+sigma**2)
 
 def pred_Zvar_simple(G,mu,sigma):
     return pred_Zsq_simple(G,mu,sigma) - pred_Zsimple(G,mu,sigma)**2
@@ -305,6 +309,22 @@ def pred_logZ_simple(G,mu,sigma):
     Z_hat = pred_Zsimple(G,mu,sigma)
     return log(Z_hat) - 1/(Z_hat**2) * pred_Zvar_simple(G,mu,sigma)/2.0
 
+def Z2_exp():
+    G = 1000
+    mu = 0
+    sigma_range = myrange(1,10,0.1)
+    Zsqs = [mean([rZsimple(G,mu,s)**2 for i in verbose_gen(range(100))])
+            for s in sigma_range]
+    simple = [pred_Zsq_simple(G,mu,s) for s in sigma_range]
+    simplified = [pred_Zsq_simplified(G,mu,s) for s in sigma_range]
+    annealed = [pred_Zsimple(G,mu,s)**2 for s in sigma_range] # equals simplified...
+    plt.scatter(sigma_range,Zsqs)
+    plt.plot(sigma_range,simple)
+    plt.plot(sigma_range,simplified)
+    plt.plot(sigma_range,annealed)
+    plt.loglog()
+    plt.show()
+    
 def annealed_approximation_test():
     """Does <log Z> ~= log <Z>?"""
     G = 10000
