@@ -1,6 +1,8 @@
 #from m_r_systems import *
 import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.pardir,"lib","utils")))
+from motifs import Escherichia_coli
+from sufficache import PSSM
 from random import gauss
 from utils import *
 from scipy.stats import normaltest
@@ -57,15 +59,26 @@ def plot_rfreq_rseq_exp():
     plt.ylabel("r_seq")
     plt.show()
 
-def real_genome_data_exp():
+def real_genome_data_r_freq_r_seq_exp():
     genome = get_ecoli_genome()
     pssms = [PSSM(getattr(Escherichia_coli,tf)) for tf in Escherichia_coli.tfs]
-    epss = [pssm.slide_trap(genome) for pssm in verbose_gen(pssms)]
-    Zs = sum(exp(-beta*eps) for eps in epss)
-    pss = [[exp(-beta*ep)/Z for ep in eps] for Z,eps in zip(Zs,epss)]
-    r_freqs = [log2(G) - h(ps) for ps in pss]
-    r_seqs = [weighted_ic(zip(sliding_window(genome,len(pssm)),ps),len(pssm))
-              for pssm in pssms]
+    rfreqs = []
+    rseqs = []
+    G = len(genome)
+    for pssm in pssms:
+        eps = pssm.slide_trap(genome)
+        print "Computing Z"
+        Z = sum(exp(-beta*ep) for ep in eps)
+        print "Computing ps"
+        ps = [exp(-beta*ep)/Z for ep in eps]
+        print "computing r_freq"
+        r_freq = log2(G) - h(ps)
+        print "computing r_seq"
+        r_seq = weighted_ic(zip(sliding_window(genome,len(pssm)),ps),len(pssm))
+        rfreqs.append(r_freq)
+        rseqs.append(r_seq)
+        print "Rfreq:",r_freq,"Rseq:",r_seq
+    return rfreqs,rseqs
     
 
 def weighted_ic(seqs_ps,L):
