@@ -60,7 +60,7 @@ def plot_rfreq_rseq_exp():
     plt.show()
 
 def real_genome_data_r_freq_r_seq_exp():
-    genome = get_ecoli_genome()
+    genome = get_ecoli_genome(at_lab=False)
     pssms = [PSSM(getattr(Escherichia_coli,tf)) for tf in Escherichia_coli.tfs]
     rfreqs = []
     rseqs = []
@@ -307,10 +307,40 @@ def rZsimple(G,mu,sigma):
 def pred_Zsimple(G,mu,sigma):
     return G*exp(mu+sigma**2/2.0)
 
+def Zexp():
+    G = 1000
+    mu = 0
+    sigma_range = myrange(1,10,0.1)
+    Zs = [rZsimple(G,mu,s) for s in sigma_range]
+    preds = [pred_Zsimple(G,mu,s) for s in sigma_range]
+    plt.scatter(sigma_range,Zs)
+    plt.plot(sigma_range,preds)
+    plt.loglog()
+    plt.show()
+                
+    
 def pred_Zsq_simple(G,mu,sigma):
     """Predict <Z^2>"""
     return G*exp(2*mu+2*sigma**2) + (G*(G-1))*exp(2*mu+sigma**2)
 
+def pred_Zsq_simple2(G,mu,sigma):
+    """Predict <Z^2>"""
+    return G*exp(2*mu+sigma**2) + (G*(G-1))*exp(2*mu+sigma**2/2.0)
+
+def Zsq_dissection(G,mu,sigma):
+    xs = [exp(random.gauss(mu,sigma)) for _ in xrange(G)]
+    selfs = sum([x**2 for x in xs])
+    checksum = sum(xs)**2
+    #others2 = sum(2*x*y for x,y in choose2(xs))
+    others = checksum - selfs
+    pred_self = G*exp(2*mu+2*sigma**2)
+    pred_self2 = G*exp(2*mu+sigma**2)
+    pred_other = (G*(G-1))*exp(2*mu+sigma**2)
+    pred_other2 = (G*(G-1))*exp(2*mu+sigma**2/2)
+    print "selfs:",pred_self,pred_self2,selfs
+    print "others:",pred_other,pred_other2,others
+    print "sum:",pred_self+pred_other,pred_self2+pred_other2,selfs+others,checksum
+    
 def pred_Zsq_simplified(G,mu,sigma):
     """Predict <Z^2>"""
     return (G**2)*exp(2*mu+sigma**2)
@@ -322,14 +352,38 @@ def pred_logZ_simple(G,mu,sigma):
     Z_hat = pred_Zsimple(G,mu,sigma)
     return log(Z_hat) - 1/(Z_hat**2) * pred_Zvar_simple(G,mu,sigma)/2.0
 
-def Z2_exp():
-    G = 1000
+def logZ_exp():
+    """Prediction veers off at critical value around sigma ~=3.5"""
+    G = 10000
     mu = 0
     sigma_range = myrange(1,10,0.1)
+    logZs = [log(rZsimple(G,0,s)) for s in sigma_range]
+    preds = [pred_logZ_simple(G,mu,s) for s in sigma_range]
+    preds_naive = [log(pred_Zsimple(G,mu,s)) for s in sigma_range]
+    plt.scatter(sigma_range,logZs)
+    plt.plot(sigma_range,preds)
+    plt.plot(sigma_range,preds_naive)
+
+def varZ_exp():
+    """We are overestimating variance"""
+    G = 10000
+    mu = 0
+    sigma_range = myrange(1,10,1)
+    varZs = [variance([(rZsimple(G,0,s)) for i in range(100)])
+             for s in verbose_gen(sigma_range)]
+    preds = [pred_Zvar_simple(G,mu,s) for s in sigma_range]
+    plt.scatter(sigma_range,varZs)
+    plt.plot(sigma_range,preds)
+    
+def Z2_exp():
+    G = 10000
+    mu = 0
+    sigma_range = myrange(1,15,1)
     Zsqs = [mean([rZsimple(G,mu,s)**2 for i in verbose_gen(range(100))])
             for s in sigma_range]
     simple = [pred_Zsq_simple(G,mu,s) for s in sigma_range]
     simplified = [pred_Zsq_simplified(G,mu,s) for s in sigma_range]
+    annealed = [pred_Zsimple(G,mu,s)**2 for s in sigma_range] # equals simplified...
     annealed = [pred_Zsimple(G,mu,s)**2 for s in sigma_range] # equals simplified...
     plt.scatter(sigma_range,Zsqs)
     plt.plot(sigma_range,simple)
