@@ -352,17 +352,44 @@ def pred_logZ_simple(G,mu,sigma):
     Z_hat = pred_Zsimple(G,mu,sigma)
     return log(Z_hat) - 1/(Z_hat**2) * pred_Zvar_simple(G,mu,sigma)/2.0
 
+def logX(m,ssq):
+    """Approximate <log X> using Taylor expansion, given mean m,variance ssq"""
+    return log(m) - 1.0/m**2 * ssq/2.0
+
+def sigma_critical_experiment():
+    """
+    Simulations suggest that Taylor expansion for <log X> breaks down
+    when X > 2<X> 'too often'.  This function explores that hypothesis.
+    """
+    pass
+    
+
+def pred_logZ_fw(G,mu,sigma):
+    mean_logZ,var_logZ = fw_approx(G,mu,sigma**2)
+    return mean_logZ
+
+
 def logZ_exp():
     """Prediction veers off at critical value around sigma ~=3.5"""
-    G = 10000
+    G = 100000
     mu = 0
-    sigma_range = myrange(1,10,0.1)
-    logZs = [log(rZsimple(G,0,s)) for s in sigma_range]
+    sigma_range = myrange(0.1,15,0.5)
+    trials = 10
+    logZs = [log(rZsimple(G,0,s)) for s in verbose_gen(sigma_range)]
+    logZ_means = [mean([log(rZsimple(G,0,s)) for i in range(trials)])
+                  for s in verbose_gen(sigma_range)]
     preds = [pred_logZ_simple(G,mu,s) for s in sigma_range]
     preds_naive = [log(pred_Zsimple(G,mu,s)) for s in sigma_range]
+    preds_desperate = [(log(pred_Zsimple(G,mu,s)))**(0.9) for s in sigma_range]
+    preds_fw = [pred_logZ_fw(G,mu,s) for s in sigma_range]
     plt.scatter(sigma_range,logZs)
+    plt.scatter(sigma_range,logZ_means,color='g')
     plt.plot(sigma_range,preds)
     plt.plot(sigma_range,preds_naive)
+    plt.plot(sigma_range,preds_fw)
+    plt.plot(sigma_range,preds_desperate)
+    plt.ylim(0,100)
+    plt.show()
 
 def varZ_exp():
     """We are overestimating variance"""
@@ -474,5 +501,38 @@ def sum_lognormal(mu,sigma,n):
     xs = [random.gauss(mu,sigma) for _ in xrange(n)]
     y = sum([exp(x) for x in xs])
     
+
+def fw_approx(G,mu,sigma_sq):
+    """Suppose Y ~ \sum_{i=1}^Ge^N(mu,sigma^2).  Return mu_y,sigma_y
+    by assuming that Y is distributed lognormally and matching the
+    first two moments."""
+    sigma_sq_y = log((exp(sigma_sq) - 1)/G + 1)
+    mu_y = log(G) + mu + (sigma_sq - sigma_sq_y)/2.0
+    return mu_y,sigma_sq_y
+
+def fw_test(G,mu,sigma_sq):
+    trials = 1000
+    sigma = sqrt(sigma_sq)
+    Zs = [rZsimple(G,mu,sigma) for i in xrange(trials)]
+    mu_y,sigma_sq_y = fw_approx(G,mu,sigma_sq)
+    mu_z = exp(mu_y + sigma_sq_y/2)
+    sigma_sq_z = (exp(sigma_sq_y) - 1)*exp(2*mu_y + sigma_sq_y)
+    print "Observed: mu:",mean(Zs),"sigma^2:",variance(Zs)
+    print "Predicted: mu:",mu_z,"sigma^2:",sigma_sq_z
+
+def fw_test_plot(G,mu):
+    sigma_range = myrange(0.1,10,0.5)
+    trials = 10000
+    mean_Zs = [mean([rZsimple(G,mu,s) for i in range(trials)])
+               for s in verbose_gen(sigma_range)]
+    fw_means = [exp(mu_y + sigma_sq_y/2.0) for mu_y,sigma_sq_y in
+                [fw_approx(G,mu,s) for s in sigma_range]]
+    simple_means = [pred_Zsimple(G,mu,s) for s in sigma_range]
+    plt.scatter(sigma_range,mean_Zs)
+    plt.plot(sigma_range,fw_means,label="FW")
+    plt.plot(sigma_range,simple_means,label="simple")
+    plt.legend(loc=0)
+    plt.show()
+                
 
 print "loaded"
