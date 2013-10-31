@@ -79,6 +79,45 @@ def real_genome_data_r_freq_r_seq_exp():
         rseqs.append(r_seq)
         print "Rfreq:",r_freq,"Rseq:",r_seq
     return rfreqs,rseqs
+
+def real_genome_data_r_freq_r_seq_exp2():
+    genome = get_ecoli_genome(at_lab=True)
+    G = len(genome)
+    sigma_range = range(1,10)
+    pssms = [PSSM(getattr(Escherichia_coli,tf)) for tf in Escherichia_coli.tfs]
+    Ls = map(len,pssms)
+    for L in range(min(Ls),max(Ls)):
+        print "starting on L =",L
+        relevant_pssms = filter(lambda pssm:len(pssm) == L,pssms)
+        print "found",len(relevant_pssms),"TFs" 
+        if not relevant_pssms:
+            continue
+        for pssm in relevant_pssms:
+            rfreqs = []
+            rseqs = []
+            eps = pssm.slide_trap(genome)
+            print "Computing Z"
+            Z = sum(exp(-beta*ep) for ep in eps)
+            print "Computing ps"
+            ps = [exp(-beta*ep)/Z for ep in eps]
+            print "computing r_freq"
+            r_freq = log2(G) - h(ps)
+            print "computing r_seq"
+            r_seq = weighted_ic(zip(sliding_window(genome,len(pssm)),ps),len(pssm))
+            rfreqs.append(r_freq)
+            rseqs.append(r_seq)
+        print "generating controls"
+        control_rfreqs_rseqs = [rfreq_rseq_exp(L,len(genome),s)
+                                for s in verbose_gen(sigma_range)]
+        plt.plot([0,20],[0,20],linestyle='--')
+        plt.scatter(rseqs,rfreqs,label='experimental')
+        plt.scatter(*transpose(control_rfreqs,r_seqs),label='control',color='g')
+        plt.xlabel("Rfreq")
+        plt.ylabel("Rseq")
+        plt.legend(loc=0)
+        plt.show()
+        
+            
     
 
 def weighted_ic(seqs_ps,L):
@@ -323,11 +362,12 @@ def pred_Zsq_simple(G,mu,sigma):
     """Predict <Z^2>"""
     return G*exp(2*mu+2*sigma**2) + (G*(G-1))*exp(2*mu+sigma**2)
 
-def pred_Zsq_simple2(G,mu,sigma):
-    """Predict <Z^2>"""
-    return G*exp(2*mu+sigma**2) + (G*(G-1))*exp(2*mu+sigma**2/2.0)
+# def pred_Zsq_simple2(G,mu,sigma):
+#     """Predict <Z^2>"""
+#     return G*exp(2*mu+sigma**2) + (G*(G-1))*exp(2*mu+sigma**2/2.0)
 
 def Zsq_dissection(G,mu,sigma):
+    trials = 100
     xs = [exp(random.gauss(mu,sigma)) for _ in xrange(G)]
     selfs = sum([x**2 for x in xs])
     checksum = sum(xs)**2
@@ -371,7 +411,7 @@ def pred_logZ_fw(G,mu,sigma):
 
 def logZ_exp():
     """Prediction veers off at critical value around sigma ~=3.5"""
-    G = 100000
+    G = 10000
     mu = 0
     sigma_range = myrange(0.1,15,0.5)
     trials = 10
@@ -388,6 +428,8 @@ def logZ_exp():
     plt.plot(sigma_range,preds_naive)
     plt.plot(sigma_range,preds_fw)
     plt.plot(sigma_range,preds_desperate)
+    plt.xlabel("sigma")
+    plt.ylabel("logZ")
     plt.ylim(0,100)
     plt.show()
 
@@ -403,19 +445,21 @@ def varZ_exp():
     plt.plot(sigma_range,preds)
     
 def Z2_exp():
-    G = 10000
+    G = 1000
     mu = 0
+    trials = 100
     sigma_range = myrange(1,15,1)
-    Zsqs = [mean([rZsimple(G,mu,s)**2 for i in verbose_gen(range(100))])
+    Zsqs = [mean([rZsimple(G,mu,s)**2 for i in verbose_gen(range(trials))])
             for s in sigma_range]
     simple = [pred_Zsq_simple(G,mu,s) for s in sigma_range]
     simplified = [pred_Zsq_simplified(G,mu,s) for s in sigma_range]
-    annealed = [pred_Zsimple(G,mu,s)**2 for s in sigma_range] # equals simplified...
     annealed = [pred_Zsimple(G,mu,s)**2 for s in sigma_range] # equals simplified...
     plt.scatter(sigma_range,Zsqs)
     plt.plot(sigma_range,simple)
     plt.plot(sigma_range,simplified)
     plt.plot(sigma_range,annealed)
+    plt.xlabel("sigma")
+    plt.ylabel("Z^2")
     plt.loglog()
     plt.show()
     
