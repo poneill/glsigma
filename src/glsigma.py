@@ -19,6 +19,29 @@ def rfreq_rseq_exp(L,G,sigma):
     r_seq = weighted_ic(zip(sliding_window(genome,L),ps),L)
     return r_freq,r_seq
 
+def plot_rfreq_rseq_exp_vary_sigma(filename=None,plot_by_sigma=False):
+    L = 10
+    G = 1000
+    sigma_range = myrange(0.1,10,.1)
+    rfreqs,rseqs = transpose([rfreq_rseq_exp(L,G,sigma)
+                              for sigma in verbose_gen(sigma_range)])
+    max_rseq = 2*L
+    max_rfreq = log2(G)
+    max_val = max(max_rseq,max_rfreq)
+    if plot_by_sigma:
+        plt.scatter(sigma_range,rfreqs)
+        plt.scatter(sigma_range,rseqs,color='g')
+        plt.plot(sigma_range,[max_rfreq]*len(sigma_range))
+        plt.plot(sigma_range,[max_rseq]*len(sigma_range))
+    else:
+        plt.scatter(rfreqs,rseqs)
+        plt.plot([0,max_val],[0,max_val],linestyle='--')
+        plt.plot([0,max_rfreq],[max_rseq,max_rseq],linestyle='--')
+        plt.plot([max_rfreq,max_rfreq],[0,max_rseq],linestyle='--')
+        plt.plot(*pl(lambda t:log2(G)-(10-t),sigma_range),linestyle='--')
+        plt.plot(*pl(lambda t:L*(2-(8-t)),sigma_range),linestyle='--')
+    maybesave(filename)
+    
 def plot_rfreq_rseq_exp():
     L0 = 10
     G0 = 10000
@@ -92,9 +115,12 @@ def real_genome_data_r_freq_r_seq_exp2():
         print "found",len(relevant_pssms),"TFs" 
         if not relevant_pssms:
             continue
+        filename = "l=%s.png" % L
+        if filename in os.listdir('.'):
+            continue
+        rfreqs = []
+        rseqs = []
         for pssm in relevant_pssms:
-            rfreqs = []
-            rseqs = []
             eps = pssm.slide_trap(genome)
             print "Computing Z"
             Z = sum(exp(-beta*ep) for ep in eps)
@@ -106,16 +132,18 @@ def real_genome_data_r_freq_r_seq_exp2():
             r_seq = weighted_ic(zip(sliding_window(genome,len(pssm)),ps),len(pssm))
             rfreqs.append(r_freq)
             rseqs.append(r_seq)
+        print rfreqs,rseqs
         print "generating controls"
         control_rfreqs_rseqs = [rfreq_rseq_exp(L,len(genome),s)
                                 for s in verbose_gen(sigma_range)]
         plt.plot([0,20],[0,20],linestyle='--')
         plt.scatter(rseqs,rfreqs,label='experimental')
-        plt.scatter(*transpose(control_rfreqs,r_seqs),label='control',color='g')
+        plt.scatter(*transpose(control_rfreqs_rseqs),label='control',color='g')
         plt.xlabel("Rfreq")
         plt.ylabel("Rseq")
         plt.legend(loc=0)
-        plt.show()
+        plt.savefig(filename)
+        plt.close()
         
             
     
@@ -222,6 +250,14 @@ def mean_eps_exp2(mu,sigma,n):
 def predict_mean_ep(mu,sigma,n):
     Z_pred = n*exp(-beta*mu+beta**2*sigma**2/2.0)
     return (-n*exp(-beta*mu+(beta*sigma)**2/2.0)*(-mu+beta*sigma**2))/Z_pred
+
+def predict_mean_ep_test(mu,sigma,n):
+    eps = [random.gauss(mu,sigma) for i in range(n)]
+    Z = sum(exp(-beta*ep) for ep in eps)
+    ps = [exp(-beta*ep)/Z for ep in eps]
+    mean_ep = sum(ep*p for ep,p in zip(eps,ps))
+    pred_mean_ep = predict_mean_ep(mu,sigma,n)
+    return mean_ep,pred_mean_ep
     
 def logZ(G,L,sigma):
     matrix = random_matrix(L,sigma)
@@ -392,6 +428,15 @@ def pred_logZ_simple(G,mu,sigma):
     Z_hat = pred_Zsimple(G,mu,sigma)
     return log(Z_hat) - 1/(Z_hat**2) * pred_Zvar_simple(G,mu,sigma)/2.0
 
+def pred_logZ_derrida(G,mu,sigma):
+    N = log2(G)
+    J = 2*sigma**2/N
+    T = 1/beta
+    return N*log(2+J**2/(4*T**2))
+
+def pred_logZ_integrate(G,mu,sigma):
+    return sigma**2/2.0 + log(G)
+    
 def logX(m,ssq):
     """Approximate <log X> using Taylor expansion, given mean m,variance ssq"""
     return log(m) - 1.0/m**2 * ssq/2.0
@@ -422,14 +467,19 @@ def logZ_exp():
     preds_naive = [log(pred_Zsimple(G,mu,s)) for s in sigma_range]
     preds_desperate = [(log(pred_Zsimple(G,mu,s)))**(0.9) for s in sigma_range]
     preds_fw = [pred_logZ_fw(G,mu,s) for s in sigma_range]
+    preds_derrida = [pred_logZ_derrida(G,mu,s) for s in sigma_range]
+    preds_integrate = [pred_logZ_integrate(G,mu,s) for s in sigma_range]
     plt.scatter(sigma_range,logZs)
     plt.scatter(sigma_range,logZ_means,color='g')
-    plt.plot(sigma_range,preds)
-    plt.plot(sigma_range,preds_naive)
-    plt.plot(sigma_range,preds_fw)
-    plt.plot(sigma_range,preds_desperate)
+    plt.plot(sigma_range,preds,label="preds")
+    plt.plot(sigma_range,preds_naive,label="preds_naive")
+    plt.plot(sigma_range,preds_fw,label="preds_fw")
+    plt.plot(sigma_range,preds_desperate,label="preds_desperate")
+    plt.plot(sigma_range,preds_derrida,label="preds_derrida")
+    plt.plot(sigma_range,preds_integrate,label="preds_integrate",linestyle='--')
     plt.xlabel("sigma")
     plt.ylabel("logZ")
+    plt.legend(loc="upper left")
     plt.ylim(0,100)
     plt.show()
 
