@@ -33,7 +33,9 @@ def rseq(G=10000,n=16,alpha=0.5,alpha_high=0.25,w=10,ep=2):
 
 def rdd(G=10000,n=16,alpha=0.5,alpha_high=0.25,w=10,ep=2):
     alpha_low = alpha - alpha_high
-    rd_low = log2(g) - log2(16) + log2(alpha_high)
+    rd_low = log2(g) - log2(15) + log2(alpha_low)
+    rd_high = log2(g) - log2(1) + log2(alpha_high)
+    return (rd_low + rd_high)/2
 
 
 def sample_Z():
@@ -57,4 +59,4 @@ def make_plot():
     for a in myrange(alpha_start,alpha_stop,alpha_step):
  	plt.plot(*pl(lambda ah:rseq(alpha=a,alpha_high=ah),
                      myrange(alpha_high_start,a,alpha_high_step)))
->>>>>>> 4df4b74cd506efff93c86769c0d450dbcd7b8577
+
