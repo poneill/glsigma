@@ -5,7 +5,7 @@ from motifs import Escherichia_coli
 from sufficache import PSSM
 from random import gauss
 from utils import *
-from scipy.stats import normaltest
+from scipy.stats import normaltest,pearsonr
 
 beta = 1.61
 
@@ -16,7 +16,7 @@ def rfreq_rseq_exp(L,G,sigma):
     Z = sum(exp(-beta*ep) for ep in eps)
     ps = [exp(-beta*ep)/Z for ep in eps]
     r_freq = log2(G) - h(ps)
-    r_seq = weighted_ic(zip(sliding_window(genome,L),ps),L)
+    r_seq = weighted_ic(zip(sliding_window(genome,L),ps),L,correct=True)
     return r_freq,r_seq
 
 def plot_rfreq_rseq_exp_vary_sigma(filename=None,plot_by_sigma=False):
@@ -34,12 +34,14 @@ def plot_rfreq_rseq_exp_vary_sigma(filename=None,plot_by_sigma=False):
         plt.plot(sigma_range,[max_rfreq]*len(sigma_range))
         plt.plot(sigma_range,[max_rseq]*len(sigma_range))
     else:
-        plt.scatter(rfreqs,rseqs)
-        plt.plot([0,max_val],[0,max_val],linestyle='--')
-        plt.plot([0,max_rfreq],[max_rseq,max_rseq],linestyle='--')
-        plt.plot([max_rfreq,max_rfreq],[0,max_rseq],linestyle='--')
-        plt.plot(*pl(lambda t:log2(G)-(10-t),sigma_range),linestyle='--')
-        plt.plot(*pl(lambda t:L*(2-(8-t)),sigma_range),linestyle='--')
+        plt.scatter(rfreqs,rseqs,color='r',label='basharin')
+        print "Pearson R:",pearsonr(rfreqs,rseqs)
+        plt.plot([0,max_val],[0,max_val],linestyle='--',label="Rfreq=Rseq")
+        plt.plot([0,max_rfreq],[max_rseq,max_rseq],linestyle='--',label="Max Rfreq")
+        plt.plot([max_rfreq,max_rfreq],[0,max_rseq],linestyle='--',label="Max Rseq")
+        #plt.plot(*pl(lambda t:log2(G)-(10-t),sigma_range),linestyle='--')
+        #plt.plot(*pl(lambda t:L*(2-(8-t)),sigma_range),linestyle='--')
+        plt.legend(loc='upper left')
     maybesave(filename)
     
 def plot_rfreq_rseq_exp():
@@ -148,13 +150,23 @@ def real_genome_data_r_freq_r_seq_exp2():
             
     
 
-def weighted_ic(seqs_ps,L):
+def weighted_ic(seqs_ps,L,correct=False):
     freq_table = [[0]*4 for i in range(L)]
     for seq,p in seqs_ps:
         for i,b in enumerate(seq):
             base_index = "ACGT".index(b)
             freq_table[i][base_index] += p
-    return 2*L - sum(map(h,freq_table))
+    if correct:
+        H_post = sum([-p*log2(p) for seq,p in seqs_ps])
+        correction = L*3/(2*log(2)*2**(H_post))*0
+        # trials = 10
+        # ics = [weighted_ic([(random_site(L),p) for seq,p in seqs_ps],L,correct=False)
+        #        for i in range(trials)]
+        # print ics
+        # correction = mean(ics)
+    else:
+        correction = 0
+    return 2*L - sum(map(h,freq_table)) - correction
 
 def random_matrix(L,sigma):
     return [[random.gauss(0,sigma) for i in range(4)] for j in range(L)]
