@@ -1,0 +1,131 @@
+\documentclass{article}
+\usepackage{amsmath}
+\newcommand{\ep}{\epsilon}
+\newcommand{\logt}{\log_2}
+\newcommand{\Var}{\mathrm{Var}}
+\title{$GL\sigma$-Models}
+\author{Patrick O'Neill}
+\begin{document}
+\maketitle{}
+
+\section{Introduction}
+We describe a mathematical model of the information content of a
+transcription factor binding motif as a function of the regulatory
+requirements of the TF-BS system.
+\section{Assumptions}
+We assume a genome containing $G$ potential binding sites in the 5'-3'
+orientation only.  We assume that the genomic background is
+well-approximated by a mononucleotide model.  For convenience we
+assume the background base statistics are uniform, though this
+assumption is easily relaxed.  The TF is present in a single copy and
+binds to $w$-mers according to a simple match-mismatch energy model with
+one preferred base at each position contributing $-\epsilon$ to the
+binding energy.  The TF regulates $n$ sites of width $w$, and must
+bind to the $i$th site at an occupancy $\alpha_i$.  Finally, we assume
+the binding process is at equilibrium and suitable to description by
+Boltzmann statistics at inverse temperature $\beta$.
+
+\section{Model Derivation}
+\subsection{Derivation of Binding Site Energies}
+We first find the binding site energy $\epsilon_i$ required to bind
+the site $s_i$ at an occupancy $\alpha_i$.  The background
+contribution $Z_b$ to the partition function $Z$ can be
+approximated\footnote{Approximating $Z_b$ by its expectation is always
+  valid, because the first moment always exists.  The utility of the
+  approximation depends on the distribution of $Z_b$ about its
+  expectation, which is captured by the second moment.  We defer these
+  questions to a later study.} as:
+
+\begin{align}
+  Z_b = \sum_{k=1}^Ge^{-\beta\epsilon_k}\approx& G<e^{-\beta\epsilon_k}> = G\omega^w  \label{eq:Zb}\\
+  \omega =& \frac{3 + e^{\beta\epsilon}}{4}  \label{eq:omega}
+\end{align}
+where $\omega$ is the expected free energy for a background base.  The
+components of the partition function $Z_f$ and $Z_b$ must satisfy the
+relation:
+
+\begin{equation}
+  \label{eq:Zb_Zf}
+  \frac{Z_f}{Z_f+Z_b} = \alpha,
+\end{equation}
+where $\alpha = \sum_i\alpha_i$, leading to the expression:
+\begin{equation}
+  \label{eq:Z}
+  Z = \frac{Z_b}{1-\alpha}.
+\end{equation}
+
+From the assumption of Boltzmann statistics:
+
+\begin{equation}
+  \label{eq:boltzmann}
+  \alpha_i = \frac{e^{-\beta\epsilon_i}}{Z}
+\end{equation}
+it then follows that:
+\begin{equation}
+  \label{eq:boltzmann}
+   \epsilon_i= \frac{\log(\alpha_i) + \log(Z)}{-\beta}.
+\end{equation}
+The site energies $\epsilon_i$ are therefore functions only of the
+site-occupancy $\alpha_i$, the total occupancy $\alpha$, and system
+parameters $G,w,\epsilon,\beta$.
+\subsection{Derivation of the match probability}
+Given the site energies $\epsilon_i$, what is the probability of
+observing a preferred base (a \textit{match}) in a column of the
+binding motif?  Rescaling the site energies by the energy per match
+gives us the expected number of matched bases $m_i$ in $s_i$, formally:
+
+\begin{equation}
+  \label{eq:expected_matches}
+  m_i = \frac{\epsilon_i}{-\epsilon}.
+\end{equation}
+Rescaling again by the number of positions $w$ in the site, we obtain
+the probability $p_i$ of observing a match in $s_i$:
+
+\begin{equation}
+  \label{eq:match_prob}
+  p_i=  \frac{m_i}{w}.
+\end{equation}
+The probability of observing a match at a position chosen at random in
+an arbitrary column of binding site alignment is therefore:
+\begin{equation}
+  \label{eq:p}
+  p = \frac{1}{n}\sum_{i=1}^np_i.
+\end{equation}
+
+In effect we consider the motif as a joint distribution over a
+collection of categorical random variables, assuming that the
+positions of the binding motif are independent and identically
+distributed.  In truth, the positions of the binding column are
+naturally dependent through the relation $\epsilon_i
+\sum_{j=1}^w\epsilon_{ij}$.  If $w$ is large in comparison to
+$\epsilon$, though, random variates will tend to approximately
+satisfy this relation and the dependence may be neglected.
+\subsection{Derivation of the motif information content}
+We consider each column of the binding motif as a random variable
+emitting the preferred base with probability $p$, and each of the
+three dispreferred bases with probability $\frac{1-p}{3}$.  The
+entropy of the column is therefore:
+
+\begin{equation}
+  \label{eq:Hcol}
+  H_{col} = -\left(p\logt p + (1-p)\logt\frac{1-p}{3}\right)
+\end{equation}
+On the assumption of independence between columns, the motif
+information content $R_{seq}$ is given by:
+\begin{equation}
+  \label{eq:Rseq}
+  R_{seq} = w(H_{prior} - H_{col})
+\end{equation}
+pwhere $H_{prior}$ is 2 bits in the case of a uniform background.
+
+This completes the derivation of the model.  We next explore the
+relationship between $R_{seq}$ and the model inputs.
+
+\section{Model Analysis}
+In this section we explore the dependence of $R_{seq}$ on the model
+parameters.  First, we see that:
+\begin{equation}
+  \label{eq:plimit}
+  \frac{2 \log\omega}{\beta \epsilon} + \frac{2 \log{\left (G \right )}}{\beta \epsilon w} + \frac{\log{\left (\alpha_{i} \right )}}{2 \beta \epsilon w} + \frac{3 \log{\left (\alpha_{o} \right )}}{2 \beta \epsilon w} + \frac{1}{\beta \epsilon w} \log{\left (\frac{1}{- \alpha + 1} \right )} + \frac{1}{\beta \epsilon w} \log{\left (- \alpha_{i} - \alpha_{o} + 1 \right )} + \frac{\log{\left (\alpha_{i} \right )}}{\beta \epsilon n w} - \frac{\log{\left (\alpha_{o} \right )}}{\beta \epsilon n w}
+\end{equation}
+\end{document}
